@@ -3,6 +3,7 @@ import type, { Application, Request, Response, NextFunction } from 'express';
 import { globalErrorHandler } from '../middleware/errorHandler.js';
 import githubProfileRouter from './githubProfileRoute.js';
 import githubRepoRouter from './githubRepoRouter.js';
+import githubCommitRouter from './githubCommitRouter.js';
 
 export const initializeRouter = (expressApplication: Application) => {
   expressApplication.get('/test', (req: Request, res: Response): any =>
@@ -10,7 +11,11 @@ export const initializeRouter = (expressApplication: Application) => {
       message: 'Testing and Working',
     })
   );
-  expressApplication.use('/api', [githubProfileRouter, githubRepoRouter]);
+  expressApplication.use('/api', [
+    githubProfileRouter,
+    githubRepoRouter,
+    githubCommitRouter,
+  ]);
 
   expressApplication.use(
     '*',
