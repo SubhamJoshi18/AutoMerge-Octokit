@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import axios from 'axios';
 import {
@@ -14,11 +14,18 @@ import {
   Tooltip,
   Chip,
   Grid,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Slide,
+  IconButton,
 } from '@mui/material';
 import { styled } from '@mui/system';
 import GitHubIcon from '@mui/icons-material/GitHub';
 import FollowersIcon from '@mui/icons-material/Group';
 import FollowingIcon from '@mui/icons-material/PersonAdd';
+import DeleteIcon from '@mui/icons-material/Delete';
 
 const ProfileCard = styled(Card)(({ theme }) => ({
   maxWidth: 600,
@@ -32,9 +39,11 @@ const ProfileCard = styled(Card)(({ theme }) => ({
 
 const ProfileGithub = () => {
   const navigate = useNavigate();
-  const octoToken = localStorage.getItem('octoToken');
+  const octoToken = localStorage.getItem('githubtoken');
   const [profileData, setProfileData] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [repo, setRepo] = useState({ private: [], public: [] });
+  const [openRepoDialog, setOpenRepoDialog] = useState(false);
 
   useEffect(() => {
     if (!octoToken) {
@@ -46,11 +55,8 @@ const ProfileGithub = () => {
     const fetchData = async () => {
       try {
         const response = await axios.get('http://localhost:3000/api/profile', {
-          headers: {
-            octoToken: octoToken,
-          },
+          headers: { githubtoken: octoToken },
         });
-        console.log(response.data);
         setProfileData(response.data.data[0]);
       } catch (err) {
         console.error(err);
@@ -66,6 +72,38 @@ const ProfileGithub = () => {
     navigate('/');
   };
 
+  const handleViewRepo = async () => {
+    try {
+      const response = await axios.get('http://localhost:3000/api/repo', {
+        headers: { githubtoken: octoToken },
+      });
+      setRepo(response.data.data); // Assuming data format { private: [...], public: [...] }
+      setOpenRepoDialog(true);
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  const handleCloseRepoDialog = () => setOpenRepoDialog(false);
+
+  const handleDeleteRepo = async (repoName, isPrivate) => {
+    try {
+      await axios.delete(`http://localhost:3000/api/repo/${repoName}`, {
+        headers: { githubtoken: octoToken },
+      });
+
+      alert(`${repoName} Deleted Successfully`);
+      setRepo((prevRepo) => ({
+        ...prevRepo,
+        [isPrivate ? 'private' : 'public']: prevRepo[
+          isPrivate ? 'private' : 'public'
+        ].filter((repo) => repo.name !== repoName),
+      }));
+    } catch (err) {
+      console.error('Failed to delete repository:', err);
+    }
+  };
+
   if (loading)
     return (
       <CircularProgress style={{ display: 'block', margin: '50px auto' }} />
@@ -75,7 +113,7 @@ const ProfileGithub = () => {
     <Box
       sx={{
         display: 'flex',
-        flexDirection: 'column', // Ensure elements stack vertically
+        flexDirection: 'column',
         alignItems: 'center',
         justifyContent: 'center',
         minHeight: '100vh',
@@ -147,24 +185,116 @@ const ProfileGithub = () => {
             </Grid>
             <Grid item xs={4}>
               <Tooltip title="Public Repos">
-                <Chip
-                  label={`${profileData.public_repos} Public Repos`}
-                  color="default"
-                  variant="outlined"
-                />
+                <Button variant="outlined" onClick={handleViewRepo}>
+                  {`${profileData.public_repos} View Repos`}
+                </Button>
               </Tooltip>
             </Grid>
           </Grid>
-          <Box sx={{ marginTop: 2 }}>
-            <Typography variant="subtitle1" gutterBottom>
-              Private Repos: {profileData.total_private_repos}
-            </Typography>
-            <Typography variant="subtitle1" gutterBottom>
-              Disk Usage: {Math.round(profileData.disk_usage / 1024)} KB
-            </Typography>
-          </Box>
         </CardContent>
       </ProfileCard>
+
+      {/* Dialog to show public and private repos */}
+      <Dialog
+        open={openRepoDialog}
+        onClose={handleCloseRepoDialog}
+        TransitionComponent={(props) => <Slide direction="up" {...props} />}
+        maxWidth="md"
+        fullWidth
+      >
+        <DialogTitle>Repositories</DialogTitle>
+        <DialogContent>
+          <Box sx={{ display: 'flex' }}>
+            <Box
+              sx={{
+                width: '50%',
+                padding: 2,
+                borderRight: '1px solid #ccc',
+                animation: 'fadeInLeft 1s ease-in-out',
+              }}
+            >
+              <Typography variant="h6" color="primary">
+                Public Repositories
+              </Typography>
+              {repo.public.map((repo) => (
+                <Box
+                  key={repo.id}
+                  sx={{
+                    marginY: 1,
+                    padding: 1,
+                    backgroundColor: '#f1f1f1',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <Typography variant="subtitle1">{repo.name}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    <a
+                      href={repo.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View on GitHub
+                    </a>
+                  </Typography>
+                  <IconButton
+                    aria-label="delete"
+                    color="error"
+                    onClick={() => handleDeleteRepo(repo.name, false)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+
+            <Box
+              sx={{
+                width: '50%',
+                padding: 2,
+                animation: 'fadeInRight 1s ease-in-out',
+              }}
+            >
+              <Typography variant="h6" color="secondary">
+                Private Repositories
+              </Typography>
+              {repo.private.map((repo) => (
+                <Box
+                  key={repo.id}
+                  sx={{
+                    marginY: 1,
+                    padding: 1,
+                    backgroundColor: '#f9f9f9',
+                    borderRadius: '4px',
+                  }}
+                >
+                  <Typography variant="subtitle1">{repo.name}</Typography>
+                  <Typography variant="body2" color="textSecondary">
+                    <a
+                      href={repo.html_url}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                    >
+                      View on GitHub
+                    </a>
+                  </Typography>
+                  <IconButton
+                    aria-label="delete"
+                    color="error"
+                    onClick={() => handleDeleteRepo(repo.name, true)}
+                  >
+                    <DeleteIcon />
+                  </IconButton>
+                </Box>
+              ))}
+            </Box>
+          </Box>
+        </DialogContent>
+        <DialogActions>
+          <Button onClick={handleCloseRepoDialog} color="primary">
+            Close
+          </Button>
+        </DialogActions>
+      </Dialog>
     </Box>
   );
 };

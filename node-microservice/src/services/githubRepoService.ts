@@ -1,8 +1,10 @@
 import { Octokit } from 'octokit';
 import gitLogger from '../libs/logger.js';
+import { getRepoOWnerName } from '../extractor/extract.js';
 
 abstract class GithubRepoSerAbs {
   abstract viewAllRepo(octoToken: string): Promise<any>;
+  abstract deleteRepo(octoToken: string, repoName: string): Promise<any>;
 }
 
 class GithubRepoSer extends GithubRepoSerAbs {
@@ -52,6 +54,44 @@ class GithubRepoSer extends GithubRepoSerAbs {
     });
 
     return filterData;
+  }
+
+  async deleteRepo(octoToken: string, repoName: string): Promise<any> {
+    let octokit: Octokit;
+    let retryCount: number = 0;
+    let retryCountStatus: boolean = true;
+
+    octokit = this.connectOctokit(octoToken as string);
+
+    while (retryCount > 0 && retryCountStatus) {
+      if (!octokit) {
+        gitLogger.info(
+          `Retrying to connect the Octokit again on the ${retryCount}`
+        );
+
+        octokit = this.connectOctokit(octoToken as string);
+        retryCount = retryCount - 1;
+      } else {
+        gitLogger.info(`Already Connected to the Octokit`);
+        break;
+      }
+    }
+
+    const ownerName = await getRepoOWnerName(octoToken);
+
+    const deletedResult = await octokit.request(
+      'DELETE /repos/{owner}/{repo}',
+      {
+        owner: ownerName,
+        repo: repoName,
+      }
+    );
+
+    gitLogger.info(
+      `Deleted The Repo ${repoName} at ${new Date().toLocaleDateString()}`
+    );
+
+    return deletedResult ? true : false;
   }
 
   private connectOctokit(octoToken: string) {

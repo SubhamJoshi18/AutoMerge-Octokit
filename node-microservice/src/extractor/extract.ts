@@ -1,3 +1,5 @@
+import { Octokit } from 'octokit';
+
 export const extractUserData = (userData: object) => {
   const extractUserData = new Set();
 
@@ -15,4 +17,13 @@ export const extractUserData = (userData: object) => {
   }
 
   return Array.from(extractUserData);
+};
+
+export const getRepoOWnerName = async (octoToken: string) => {
+  const octokit = new Octokit({
+    auth: octoToken as string,
+  });
+  const response = await octokit.request('GET /user');
+  const userData = response['data'];
+  return response['data']['login'];
 };

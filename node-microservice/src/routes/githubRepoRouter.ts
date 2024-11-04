@@ -7,7 +7,13 @@ const githubRepoRouter = Router();
 githubRepoRouter.get(
   '/repo',
   validateAccessToken as any,
-  githubRepoController.viewAllRepo 
+  githubRepoController.viewAllRepo
+);
+
+githubRepoRouter.delete(
+  '/repo/:repoName',
+  validateAccessToken as any,
+  githubRepoController.deleteRepo
 );
 
 export default githubRepoRouter;

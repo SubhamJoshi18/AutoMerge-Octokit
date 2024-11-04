@@ -41,9 +41,15 @@ const AuthGithub = () => {
         githubToken: accessToken,
       });
 
-      localStorage.setItem('octoToken', response['data']['octoToken']);
+      console.log(response['data']['data']['octoToken']);
+      localStorage.setItem(
+        'githubtoken',
+        response['data']['data']['octoToken']
+      );
 
-      navigate('/profile'); // Navigate to the dashboard or desired page upon success
+      if (response['data']['data']['octoToken']) {
+        navigate('/profile'); // Navigate to the dashboard or desired page upon success
+      }
     } catch (err) {
       console.error(err);
       setError('Authentication failed. Please check your token.');
