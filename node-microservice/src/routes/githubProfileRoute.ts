@@ -12,4 +12,7 @@ githubProfileRouter.post(
 
 githubProfileRouter.get('/profile', githubProfileController.viewProfile);
 
+
+
+
 export default githubProfileRouter;

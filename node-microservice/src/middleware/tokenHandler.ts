@@ -15,8 +15,9 @@ export const validateAccessToken = (
   res: Response,
   next: NextFunction
 ) => {
-  const token = req.headers['githubToken'] ?? req.headers?.githubToken;
-
+  console.log(req.headers);
+  const token = req.headers['githubtoken'] ?? req.headers?.githubtoken;
+  console.log('This is a token', token);
   if (!token) {
     gitLogger.error(`Cannot Find the Github Token to Validate`);
     return res.status(404).json({
