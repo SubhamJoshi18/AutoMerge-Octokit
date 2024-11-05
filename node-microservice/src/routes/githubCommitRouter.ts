@@ -10,4 +10,10 @@ githubCommitRouter.get(
   githubCommitController.viewCurrentCommit
 );
 
+githubCommitRouter.post(
+  '/commit/compare/:repoName',
+  validateAccessToken as any,
+  githubCommitController.viewLatestAndPreviousCompare
+);
+
 export default githubCommitRouter;
